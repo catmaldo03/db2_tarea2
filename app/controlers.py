@@ -1,6 +1,7 @@
 from litestar import Controller, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DTOData
+from litestar.exceptions import HTTPException
 
 from app.dtos import (
     AuthorReadDTO,
@@ -9,6 +10,7 @@ from app.dtos import (
     AuthorWriteDTO,
     BookReadDTO,
     BookWriteDTO,
+    BookUpdateDTO
 )
 from app.models import Author, Book
 from app.repositories import (
@@ -63,3 +65,11 @@ class BookController(Controller):
     @get("/{book_id:int}", return_dto=BookReadDTO)
     async def get_book(self, book_id: int, books_repo: BookRepository) -> Book:
         return books_repo.get(book_id)
+    
+    @patch("/{book_id:int}", dto=BookUpdateDTO)
+    async def update_book(
+        self, book_id: int, data: DTOData[Book], books_repo: BookRepository
+    ) -> Book:
+        book = books_repo.get(book_id)
+        book = data.update_instance(book)
+        return books_repo.update(book)

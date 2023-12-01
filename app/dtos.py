@@ -26,3 +26,6 @@ class BookReadDTO(SQLAlchemyDTO[Book]):
 class BookWriteDTO(SQLAlchemyDTO[Book]):
     config = SQLAlchemyDTOConfig(exclude={"id", "author"})
 
+class BookUpdateDTO(SQLAlchemyDTO[Book]):
+    config = SQLAlchemyDTOConfig(exclude={"id","author","author_id"}, partial=True)
+
