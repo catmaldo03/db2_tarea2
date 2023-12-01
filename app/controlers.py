@@ -9,7 +9,6 @@ from app.dtos import (
     AuthorWriteDTO,
     BookReadDTO,
     BookWriteDTO,
-    BookReadIDDTO,
 )
 from app.models import Author, Book
 from app.repositories import (
@@ -61,6 +60,6 @@ class BookController(Controller):
     async def create_book(self, data: Book, books_repo: BookRepository) -> Book:
         return books_repo.add(data)
 
-    @get("/{book_id:int}", dto=BookReadIDDTO)
-    async def get_book(self, book_id: int, book_repo: BookRepository) -> Book:
-        return book_repo.get(book_id)
+    @get("/{book_id:int}", return_dto=BookReadDTO)
+    async def get_book(self, book_id: int, books_repo: BookRepository) -> Book:
+        return books_repo.get(book_id)
