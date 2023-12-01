@@ -1,7 +1,7 @@
 from litestar import Controller, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DTOData
-from litestar.exceptions import HTTPException
+from litestar.exceptions import HTTPException, NotFoundException
 
 from app.dtos import (
     AuthorReadDTO,
@@ -64,7 +64,10 @@ class BookController(Controller):
 
     @get("/{book_id:int}", return_dto=BookReadDTO)
     async def get_book(self, book_id: int, books_repo: BookRepository) -> Book:
-        return books_repo.get(book_id)
+        try:
+            return  books_repo.get(book_id)
+        except:
+            raise NotFoundException("El libro no existe")
     
     @patch("/{book_id:int}", dto=BookUpdateDTO)
     async def update_book(
