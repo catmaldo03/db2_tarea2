@@ -1,7 +1,8 @@
 from litestar import Controller, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DTOData
-from litestar.exceptions import HTTPException, NotFoundException
+from litestar.exceptions import NotFoundException
+from sqlalchemy.orm import sessionmaker
 
 from app.dtos import (
     AuthorReadDTO,
@@ -10,14 +11,19 @@ from app.dtos import (
     AuthorWriteDTO,
     BookReadDTO,
     BookWriteDTO,
-    BookUpdateDTO
+    BookUpdateDTO,
+    ClientReadDTO,
+    ClientWriteDTO,
+    ClientUpdateDTO,
 )
-from app.models import Author, Book
+from app.models import Author, Book, Client
 from app.repositories import (
     AuthorRepository,
     BookRepository,
+    ClientRepository,
     provide_authors_repo,
     provide_books_repo,
+    provide_clients_repo,
 )
 
 
@@ -76,3 +82,32 @@ class BookController(Controller):
         book = books_repo.get(book_id)
         book = data.update_instance(book)
         return books_repo.update(book)
+
+class ClientController(Controller):
+    path = "/clients"
+    tags = ["clients"]
+    return_dto = ClientReadDTO
+    dependencies = {"clients_repo": Provide(provide_clients_repo)}  
+
+    @get() #lista de clientes
+    async def list_clients(self, clients_repo: ClientRepository) -> list[Client]:
+        return clients_repo.list()
+    
+    @post(dto=ClientWriteDTO)#agregar cliente
+    async def create_client(self, data: Client, clients_repo: ClientRepository) -> Client:
+        return clients_repo.add(data)
+    
+    @get("/{client_id:int}", return_dto=ClientReadDTO) #obtener clientes por id
+    async def get_client(self, client_id: int, clients_repo: ClientRepository) -> Client:
+        try:
+            return  clients_repo.get(client_id)
+        except:
+            raise NotFoundException("El cliente no existe")
+        
+    @patch("/{client_id:int}", dto=ClientUpdateDTO) #Actualizar cliente
+    async def update_client(
+        self, client_id: int, data: DTOData[Client], clients_repo: ClientRepository
+    ) -> Client:
+        client = clients_repo.get(client_id)
+        client = data.update_instance(client)
+        return clients_repo.update(client)

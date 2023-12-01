@@ -56,3 +56,12 @@ class BookCategory(Base):
 
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), primary_key=True)
+
+
+class Client(Base):
+    __tablename__="clients"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    last_name: Mapped[str]
+    
