@@ -1,7 +1,7 @@
 from litestar import Controller, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DTOData
-from litestar.exceptions import NotFoundException, HTTPException
+from litestar.exceptions import HTTPException, NotFoundException
 
 from app.dtos import (
     AuthorReadDTO,
@@ -9,25 +9,28 @@ from app.dtos import (
     AuthorUpdateDTO,
     AuthorWriteDTO,
     BookReadDTO,
-    BookWriteDTO,
+    BookReadFullDTO,
     BookUpdateDTO,
+    BookWriteDTO,
     ClientReadDTO,
-    ClientWriteDTO,
+    ClientReadFullDTO,
     ClientUpdateDTO,
-    BookloanReadDTO,
-    BookloanUpdateDTO,
-    BookloanWriteDTO,
+    ClientWriteDTO,
+    baReadDTO,
+    baReadFullDTO,
+    baUpdateDTO,
+    baWriteDTO,
 )
-from app.models import Author, Book, Client,Bookloan
+from app.models import Author, Book, Client, ba
 from app.repositories import (
     AuthorRepository,
     BookRepository,
     ClientRepository,
-    BookloanRepository,
+    baRepository,
     provide_authors_repo,
+    provide_bas_repo,
     provide_books_repo,
     provide_clients_repo,
-    provide_bookloans_repo
 )
 
 
@@ -72,13 +75,13 @@ class BookController(Controller):
     async def create_book(self, data: Book, books_repo: BookRepository) -> Book:
         return books_repo.add(data)
 
-    @get("/{book_id:int}", return_dto=BookReadDTO)
+    @get("/{book_id:int}", return_dto=BookReadFullDTO)
     async def get_book(self, book_id: int, books_repo: BookRepository) -> Book:
         try:
-            return  books_repo.get(book_id)
+            return books_repo.get(book_id)
         except:
             raise NotFoundException("El libro no existe")
-    
+
     @patch("/{book_id:int}", dto=BookUpdateDTO)
     async def update_book(
         self, book_id: int, data: DTOData[Book], books_repo: BookRepository
@@ -87,28 +90,29 @@ class BookController(Controller):
         book = data.update_instance(book)
         return books_repo.update(book)
 
+
 class ClientController(Controller):
     path = "/clients"
     tags = ["clients"]
     return_dto = ClientReadDTO
-    dependencies = {"clients_repo": Provide(provide_clients_repo)}  
+    dependencies = {"clients_repo": Provide(provide_clients_repo)}
 
-    @get() #lista de clientes
+    @get()  # lista de clientes
     async def list_clients(self, clients_repo: ClientRepository) -> list[Client]:
         return clients_repo.list()
-    
-    @post(dto=ClientWriteDTO)#agregar cliente
+
+    @post(dto=ClientWriteDTO)  # agregar cliente
     async def create_client(self, data: Client, clients_repo: ClientRepository) -> Client:
         return clients_repo.add(data)
-    
-    @get("/{client_id:int}", return_dto=ClientReadDTO) #obtener clientes por id
+
+    @get("/{client_id:int}", return_dto=ClientReadFullDTO)  # obtener clientes por id
     async def get_client(self, client_id: int, clients_repo: ClientRepository) -> Client:
         try:
-            return  clients_repo.get(client_id)
+            return clients_repo.get(client_id)
         except:
             raise NotFoundException("El cliente no existe")
-        
-    @patch("/{client_id:int}", dto=ClientUpdateDTO) #Actualizar cliente
+
+    @patch("/{client_id:int}", dto=ClientUpdateDTO)  # Actualizar cliente
     async def update_client(
         self, client_id: int, data: DTOData[Client], clients_repo: ClientRepository
     ) -> Client:
@@ -116,33 +120,43 @@ class ClientController(Controller):
         client = data.update_instance(client)
         return clients_repo.update(client)
 
-class BookloanController(Controller):
-    path = "/book_loans"
-    tags = ["book_loans"]
-    return_dto = BookloanReadDTO
-    dependencies = {"book_loans_repo": Provide(provide_bookloans_repo),
-                    "books_repo": Provide(provide_books_repo)}  
 
-    @get() #lista de pedidos
-    async def list_book_loans(self, book_loans_repo: BookloanRepository) -> list[Bookloan]:
-        return book_loans_repo.list()
-    
-    @post(dto=BookloanWriteDTO)#agregar deuda
-    async def create_book_loans(self, data: Bookloan,book_loans_repo: BookloanRepository, books_repo: BookRepository) -> Bookloan:
-        book_loans_repo.add(data)
+class baController(Controller):
+    path = "/bas"
+    tags = ["bas"]
+    return_dto = baReadDTO
+    dependencies = {
+        "bas_repo": Provide(provide_bas_repo),
+        "books_repo": Provide(provide_books_repo),
+        "clients_repo": Provide(provide_clients_repo),
+    }
+
+    @get()  # lista de pedidos
+    async def list_bas(self, bas_repo: baRepository) -> list[ba]:
+        return bas_repo.list()
+
+    @post(dto=baWriteDTO)  # agregar deuda
+    async def create_bas(self, data: ba, bas_repo: baRepository, books_repo: BookRepository) -> ba:
+        book = books_repo.get(data.book_id)
+        if book.copies == 0:
+            raise HTTPException(
+                detail="No hay copias disponibles",
+                status_code=400,
+            )
+        bas_repo.add(data)
+        book.copies -= 1
+        books_repo.update(book)
         return data
-    
-    @get("/{book_loans_id:int}", return_dto=BookloanReadDTO) #obtener deuda por id
-    async def get_book_loans(self, bookloan_id: int, book_loans_repo: BookloanRepository) -> Bookloan:
+
+    @get("/{bas_id:int}", return_dto=baReadFullDTO)  # obtener deuda por id
+    async def get_bas(self, bas_id: int, bas_repo: baRepository) -> ba:
         try:
-            return  book_loans_repo.get(bookloan_id)
+            return bas_repo.get(bas_id)
         except:
             raise NotFoundException("El prestamo no existe")
-        
-    @patch("/{book_loans_id:int}", dto=BookloanUpdateDTO) #Actualizar cliente
-    async def update_client(
-        self, bookloan_id: int, data: DTOData[Bookloan], book_loans_repo: BookloanRepository
-    ) -> Bookloan:
-        loan = book_loans_repo.get(bookloan_id)
+
+    @patch("/{bas_id:int}", dto=baUpdateDTO)  # Actualizar cliente
+    async def update_bas(self, bas_id: int, data: DTOData[ba], bas_repo: baRepository) -> ba:
+        loan = bas_repo.get(bas_id)
         loan = data.update_instance(loan)
-        return book_loans_repo.update(loan)
+        return bas_repo.update(loan)

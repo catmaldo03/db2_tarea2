@@ -1,8 +1,8 @@
-"""intento 5? de la primera actividad
+"""implementacion quinta pregunta
 
-Revision ID: f06dfb370e88
-Revises: d3d34fe91cba
-Create Date: 2023-12-01 10:38:11.287496
+Revision ID: 24944af1133e
+Revises: 78dd85419582
+Create Date: 2023-12-04 09:01:14.499759
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "f06dfb370e88"
-down_revision: Union[str, None] = "d3d34fe91cba"
+revision: str = "24944af1133e"
+down_revision: Union[str, None] = "78dd85419582"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
