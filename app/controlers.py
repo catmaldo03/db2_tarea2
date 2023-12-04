@@ -1,8 +1,7 @@
 from litestar import Controller, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DTOData
-from litestar.exceptions import NotFoundException
-from sqlalchemy.orm import sessionmaker
+from litestar.exceptions import NotFoundException, HTTPException
 
 from app.dtos import (
     AuthorReadDTO,
@@ -15,15 +14,20 @@ from app.dtos import (
     ClientReadDTO,
     ClientWriteDTO,
     ClientUpdateDTO,
+    BookloanReadDTO,
+    BookloanUpdateDTO,
+    BookloanWriteDTO,
 )
-from app.models import Author, Book, Client
+from app.models import Author, Book, Client,Bookloan
 from app.repositories import (
     AuthorRepository,
     BookRepository,
     ClientRepository,
+    BookloanRepository,
     provide_authors_repo,
     provide_books_repo,
     provide_clients_repo,
+    provide_bookloans_repo
 )
 
 
@@ -111,3 +115,34 @@ class ClientController(Controller):
         client = clients_repo.get(client_id)
         client = data.update_instance(client)
         return clients_repo.update(client)
+
+class BookloanController(Controller):
+    path = "/book_loans"
+    tags = ["book_loans"]
+    return_dto = BookloanReadDTO
+    dependencies = {"book_loans_repo": Provide(provide_bookloans_repo),
+                    "books_repo": Provide(provide_books_repo)}  
+
+    @get() #lista de pedidos
+    async def list_book_loans(self, book_loans_repo: BookloanRepository) -> list[Bookloan]:
+        return book_loans_repo.list()
+    
+    @post(dto=BookloanWriteDTO)#agregar deuda
+    async def create_book_loans(self, data: Bookloan,book_loans_repo: BookloanRepository, books_repo: BookRepository) -> Bookloan:
+        book_loans_repo.add(data)
+        return data
+    
+    @get("/{book_loans_id:int}", return_dto=BookloanReadDTO) #obtener deuda por id
+    async def get_book_loans(self, bookloan_id: int, book_loans_repo: BookloanRepository) -> Bookloan:
+        try:
+            return  book_loans_repo.get(bookloan_id)
+        except:
+            raise NotFoundException("El prestamo no existe")
+        
+    @patch("/{book_loans_id:int}", dto=BookloanUpdateDTO) #Actualizar cliente
+    async def update_client(
+        self, bookloan_id: int, data: DTOData[Bookloan], book_loans_repo: BookloanRepository
+    ) -> Bookloan:
+        loan = book_loans_repo.get(bookloan_id)
+        loan = data.update_instance(loan)
+        return book_loans_repo.update(loan)

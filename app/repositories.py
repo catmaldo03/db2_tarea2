@@ -1,7 +1,7 @@
 from litestar.contrib.sqlalchemy.repository import SQLAlchemySyncRepository
 from sqlalchemy.orm import Session
 
-from app.models import Author, Book, Client
+from app.models import Author, Book, Client,Bookloan
 
 
 class AuthorRepository(SQLAlchemySyncRepository[Author]):
@@ -25,3 +25,10 @@ class ClientRepository(SQLAlchemySyncRepository[Client]):
 
 async def provide_clients_repo(db_session: Session):
     return ClientRepository(session=db_session, auto_commit=True)
+
+class BookloanRepository(SQLAlchemySyncRepository[Bookloan]):
+    model_type = Bookloan
+
+
+async def provide_bookloans_repo(db_session: Session):
+    return BookloanRepository(session=db_session, auto_commit=True)
